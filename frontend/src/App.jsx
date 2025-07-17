@@ -52,9 +52,21 @@ export default function App() {
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!amount || !category || !date) {
-      alert('Заполните все поля');
+      alert('Please fill in all the fields');
       return;
     }
+
+    if (/^\d+$/.test(category.trim())) {
+      alert('Category cannot consist of digits only');
+      return;
+    }
+
+    // Warn if balance will go negative
+    if (type === 'expense' && balance - parseFloat(amount) < 0) {
+      const proceed = window.confirm('This expense will make your balance negative. Continue?');
+      if (!proceed) return;
+    }
+
     try {
       await axios.post(`${API_URL}/operations`, {
         type,
@@ -111,6 +123,31 @@ export default function App() {
           '#FFCE56',
           '#4BC0C0',
           '#9966FF',
+          '#FF9F40',
+        ],
+      },
+    ],
+  };
+
+  // Income chart data
+  const incomeDataMap = {};
+  operations
+    .filter((op) => op.type === 'income')
+    .forEach((op) => {
+      incomeDataMap[op.category] = (incomeDataMap[op.category] || 0) + op.amount;
+    });
+
+  const chartDataIncome = {
+    labels: Object.keys(incomeDataMap),
+    datasets: [
+      {
+        data: Object.values(incomeDataMap),
+        backgroundColor: [
+          '#4BC0C0',
+          '#36A2EB',
+          '#9966FF',
+          '#FF6384',
+          '#FFCE56',
           '#FF9F40',
         ],
       },
@@ -271,7 +308,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Chart */}
+      {/* Expense Chart */}
       <div className="card mb-4 shadow">
         <div className="card-body chart-wrapper">
           <h2 className="card-title mb-4 text-center">Expense Chart by Category</h2>
@@ -279,6 +316,18 @@ export default function App() {
             <p className="text-center">No data for chart</p>
           ) : (
             <Pie data={chartData} />
+          )}
+        </div>
+      </div>
+
+      {/* Income Chart */}
+      <div className="card mb-4 shadow">
+        <div className="card-body chart-wrapper">
+          <h2 className="card-title mb-4 text-center">Income Chart by Category</h2>
+          {Object.keys(incomeDataMap).length === 0 ? (
+            <p className="text-center">No data for chart</p>
+          ) : (
+            <Pie data={chartDataIncome} />
           )}
         </div>
       </div>
